@@ -1,12 +1,25 @@
 import express from 'express';
-import { getWeatherByCoords, getWeatherByCity } from '../controllers/weatherController.js';
+import {
+  getWeatherByCoords,
+  getWeatherByCity,
+  addToFavorites,
+  removeFromFavorites,
+  getFavorites,
+  getSearchHistory
+} from '../controllers/weatherController.js';
 
 const router = express.Router();
 
-// Get weather by coordinates
+// Weather routes
 router.get('/coords', getWeatherByCoords);
-
-// Get weather by city name
 router.get('/city', getWeatherByCity);
 
-export default router; 
+// Favorites routes
+router.post('/favorites', addToFavorites);
+router.delete('/favorites', removeFromFavorites);
+router.get('/favorites/:userId', getFavorites);
+
+// Search history routes
+router.get('/history/:userId', getSearchHistory);
+
+export default router;

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import weatherRoutes from './routes/weather.js';
 
 // Load environment variables
 dotenv.config();
@@ -25,13 +26,25 @@ const connectDB = async () => {
 
 connectDB();
 
-// Routes will be imported here
-// app.use('/api/weather', weatherRoutes);
-// app.use('/api/users', userRoutes);
+// Routes
+app.use('/api/weather', weatherRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ message: err.message });
+  }
+  
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+  
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
+  
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
@@ -39,4 +52,4 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-}); 
+});

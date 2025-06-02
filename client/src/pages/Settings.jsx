@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { Switch } from '@headlessui/react';
+import { MoonIcon, SunIcon, BellIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
 
 const Settings = () => {
   const { darkMode, toggleTheme } = useTheme();
@@ -22,95 +25,111 @@ const Settings = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        Settings
-      </h1>
+    <div className="max-w-4xl mx-auto px-4">
+      <h1 className="text-3xl font-bold mb-8 dark:text-white">Settings</h1>
 
-      <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
         {/* Theme Setting */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Appearance
-          </h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-gray-700 dark:text-gray-300">Dark Mode</span>
-            <button
-              onClick={toggleTheme}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                darkMode ? 'bg-primary-600' : 'bg-gray-200'
-              }`}
+            <div className="flex items-center gap-4">
+              {darkMode ? (
+                <MoonIcon className="h-6 w-6 text-gray-400" />
+              ) : (
+                <SunIcon className="h-6 w-6 text-yellow-500" />
+              )}
+              <div>
+                <h2 className="text-lg font-semibold dark:text-white">Dark Mode</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Toggle between light and dark theme
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={darkMode}
+              onChange={toggleTheme}
+              className={`${darkMode ? 'bg-blue-600' : 'bg-gray-200'}
+                relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
             >
+              <span className="sr-only">Toggle dark mode</span>
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  darkMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`${darkMode ? 'translate-x-6' : 'translate-x-1'}
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
               />
-            </button>
+            </Switch>
           </div>
         </div>
 
         {/* Units Setting */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Units
-          </h2>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-3">
-              <input
-                type="radio"
-                name="units"
-                value="metric"
-                checked={units === 'metric'}
-                onChange={(e) => setUnits(e.target.value)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-gray-700 dark:text-gray-300">
-                Metric (°C, m/s)
-              </span>
-            </label>
-            <label className="flex items-center space-x-3">
-              <input
-                type="radio"
-                name="units"
-                value="imperial"
-                checked={units === 'imperial'}
-                onChange={(e) => setUnits(e.target.value)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-gray-700 dark:text-gray-300">
-                Imperial (°F, mph)
-              </span>
-            </label>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <BeakerIcon className="h-6 w-6 text-blue-500" />
+              <div>
+                <h2 className="text-lg font-semibold dark:text-white">Temperature Unit</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Choose your preferred temperature unit
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setUnits('metric')}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  units === 'metric'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Celsius
+              </button>
+              <button
+                onClick={() => setUnits('imperial')}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  units === 'imperial'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Fahrenheit
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Notifications Setting */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Notifications
-          </h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-gray-700 dark:text-gray-300">
-              Weather Alerts
-            </span>
-            <button
-              onClick={handleNotificationChange}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                notifications ? 'bg-primary-600' : 'bg-gray-200'
-              }`}
+            <div className="flex items-center gap-4">
+              <BellIcon className="h-6 w-6 text-yellow-500" />
+              <div>
+                <h2 className="text-lg font-semibold dark:text-white">Weather Alerts</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Get notified about severe weather conditions
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={notifications}
+              onChange={handleNotificationChange}
+              className={`${notifications ? 'bg-blue-600' : 'bg-gray-200'}
+                relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
             >
+              <span className="sr-only">Toggle notifications</span>
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  notifications ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`${notifications ? 'translate-x-6' : 'translate-x-1'}
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
               />
-            </button>
+            </Switch>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
-export default Settings; 
+export default Settings;
