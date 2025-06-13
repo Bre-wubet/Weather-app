@@ -35,15 +35,12 @@ function App() {
               <main className="container mx-auto px-4 py-8">
                 <Routes>
                   {/* Public routes */}
+                  <Route path="/" element={ <Home />   } />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   
+                  
                   {/* Protected routes */}
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Home />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/favorites" element={
                     <ProtectedRoute>
                       <Favorites />
