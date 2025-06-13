@@ -99,8 +99,8 @@ export const getWeatherByCity = async (req, res) => {
       return res.status(400).json({ message: 'City name is required' });
     }
 
-    // Get coordinates first
-    const cityData = await axios.get(`${BASE_URL}/weather`, {
+    // 1. Get current weather (including coordinates)
+    const currentWeatherResponse = await axios.get(`${BASE_URL}/weather`, {
       params: {
         q: city,
         appid: OPENWEATHER_API_KEY,
@@ -108,20 +108,45 @@ export const getWeatherByCity = async (req, res) => {
       }
     });
 
-    const { lat, lon } = cityData.data.coord;
+    const { coord, name } = currentWeatherResponse.data;
 
-    // Get forecast using coordinates
-    const forecast = await axios.get(ONE_CALL_URL, {
+    // 2. Get 5-day forecast (3-hour intervals)
+    const forecastResponse = await axios.get(`${BASE_URL}/forecast`, {
       params: {
-        lat,
-        lon,
+        lat: coord.lat,
+        lon: coord.lon,
         appid: OPENWEATHER_API_KEY,
-        units: 'metric',
-        exclude: 'minutely,hourly'
+        units: 'metric'
       }
     });
 
-    // Save to search history if userId is provided
+    // 3. Convert 3-hour forecasts into daily summaries (e.g. daily max/min)
+    const dailyForecast = [];
+
+    const forecastMap = {};
+
+    forecastResponse.data.list.forEach(entry => {
+      const date = entry.dt_txt.split(' ')[0]; // Get date only
+      if (!forecastMap[date]) {
+        forecastMap[date] = [];
+      }
+      forecastMap[date].push(entry);
+    });
+
+    for (const [date, entries] of Object.entries(forecastMap)) {
+      const temps = entries.map(e => e.main.temp);
+      dailyForecast.push({
+        date,
+        min: Math.min(...temps),
+        max: Math.max(...temps),
+        weather: entries[0].weather[0], // Use first entry's weather info
+      });
+    }
+
+    // Optional: Limit to next 5 days
+    const trimmedForecast = dailyForecast.slice(0, 5);
+
+    // 4. Save to search history if userId is provided
     if (userId) {
       try {
         await User.findByIdAndUpdate(userId, {
@@ -133,37 +158,36 @@ export const getWeatherByCity = async (req, res) => {
           }
         });
       } catch (error) {
-        console.error('Error saving to search history:', error);
+        console.error('Error saving to search history:', error.message);
       }
     }
 
+    // 5. Send response
     res.json({
-      current: cityData.data,
-      forecast: forecast.data.daily.slice(0, 7)
+      current: currentWeatherResponse.data,
+      forecast: trimmedForecast
     });
+
   } catch (error) {
     console.error('Error fetching weather data:', error.response?.data || error.message);
-    
-    if (error.response?.data?.cod === '429') {
-      return res.status(429).json({ message: 'Too many requests to weather service' });
-    }
-    
-    if (error.response?.data?.cod === '401') {
-      return res.status(401).json({ message: 'Invalid API key' });
+
+    const apiMessage = error.response?.data?.message;
+    const status = error.response?.status || 500;
+
+    if (status === 404) {
+      return res.status(404).json({ message: 'City not found. Please check the spelling.' });
     }
 
-    if (error.response?.data?.message) {
-      return res.status(error.response.status || 500).json({ 
-        message: `Weather API error: ${error.response.data.message}` 
-      });
+    if (status === 401) {
+      return res.status(401).json({ message: 'Invalid API key. Please check your .env file.' });
     }
 
-    // For network errors or other issues
-    res.status(500).json({ 
-      message: 'Error connecting to weather service. Please try again later.' 
+    res.status(status).json({
+      message: `Weather API error: ${apiMessage || 'Unknown error'}`
     });
   }
 };
+
 
 export const addToFavorites = async (req, res) => {
   try {
