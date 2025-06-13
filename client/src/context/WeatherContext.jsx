@@ -56,8 +56,8 @@ export const WeatherProvider = ({ children }) => {
         }
       });
       setLocation({
-        lat: data.coord.lat,
-        lon: data.coord.lon
+        lat: data.current.coord.lat,
+        lon: data.current.coord.lon
       });
       return data;
     } catch (error) {

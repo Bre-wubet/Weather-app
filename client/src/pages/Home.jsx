@@ -56,7 +56,25 @@ const Home = () => {
   };
 
   const handleAddToFavorites = async () => {
-    if (!weatherData?.current) return;
+    if (!weatherData?.current) {
+      console.log('No weather data available');
+      return;
+    }
+    
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      console.log('No userId found in localStorage');
+      toast.error('Please log in to add favorites');
+      return;
+    }
+
+    console.log('Attempting to add to favorites:', {
+      cityName: weatherData.current.name,
+      lat: weatherData.current.coord.lat,
+      lon: weatherData.current.coord.lon,
+      userId
+    });
+
     try {
       await addToFavorites.mutateAsync({
         cityName: weatherData.current.name,
@@ -65,7 +83,8 @@ const Home = () => {
       });
       toast.success('Added to favorites');
     } catch (error) {
-      toast.error('Error adding to favorites');
+      console.error('Error adding to favorites:', error.response?.data || error);
+      toast.error(error.response?.data?.message || 'Error adding to favorites');
     }
   };
 

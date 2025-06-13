@@ -192,12 +192,20 @@ export const getWeatherByCity = async (req, res) => {
 export const addToFavorites = async (req, res) => {
   try {
     const { userId, cityName, lat, lon } = req.body;
+    console.log('Received addToFavorites request:', { userId, cityName, lat, lon });
 
     if (!userId || !cityName || !lat || !lon) {
+      console.log('Missing required fields:', { userId, cityName, lat, lon });
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const user = await User.findByIdAndUpdate(
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log('User not found:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
         $addToSet: {
@@ -212,10 +220,11 @@ export const addToFavorites = async (req, res) => {
       { new: true }
     );
 
-    res.json(user.favorites);
+    console.log('Successfully added to favorites:', updatedUser.favorites);
+    res.json(updatedUser.favorites);
   } catch (error) {
     console.error('Error adding to favorites:', error);
-    res.status(500).json({ message: 'Error adding to favorites' });
+    res.status(500).json({ message: 'Error adding to favorites: ' + error.message });
   }
 };
 
