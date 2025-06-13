@@ -6,7 +6,6 @@ dotenv.config();
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
-const ONE_CALL_URL = 'https://api.openweathermap.org/data/3.0/onecall';
 
 export const getWeatherByCoords = async (req, res) => {
   try {
@@ -16,27 +15,45 @@ export const getWeatherByCoords = async (req, res) => {
       return res.status(400).json({ message: 'Latitude and longitude are required' });
     }
 
-    const [currentWeather, forecast] = await Promise.all([
-      axios.get(`${BASE_URL}/weather`, {
-        params: {
-          lat,
-          lon,
-          appid: OPENWEATHER_API_KEY,
-          units: 'metric'
-        }
-      }),
-      axios.get(ONE_CALL_URL, {
-        params: {
-          lat,
-          lon,
-          appid: OPENWEATHER_API_KEY,
-          units: 'metric',
-          exclude: 'minutely,hourly'
-        }
-      })
-    ]);
+    if (!OPENWEATHER_API_KEY) {
+      console.error('OpenWeather API key is not configured');
+      return res.status(500).json({ message: 'Weather service is not properly configured' });
+    }
 
-    // Save to search history if userId is provided
+    // 1. Fetch current weather
+    const currentWeather = await axios.get(`${BASE_URL}/weather`, {
+      params: {
+        lat,
+        lon,
+        appid: OPENWEATHER_API_KEY,
+        units: 'metric'
+      }
+    });
+
+    // 2. Fetch 5-day forecast (every 3 hours)
+    const forecastResponse = await axios.get(`${BASE_URL}/forecast`, {
+      params: {
+        lat,
+        lon,
+        appid: OPENWEATHER_API_KEY,
+        units: 'metric'
+      }
+    });
+
+    // 3. Extract one forecast per day (preferably around midday)
+    const forecastList = forecastResponse.data.list;
+    const dailyForecast = [];
+    const seenDates = new Set();
+
+    for (const item of forecastList) {
+      const date = item.dt_txt.split(' ')[0];
+      if (!seenDates.has(date) && item.dt_txt.includes('12:00:00')) {
+        dailyForecast.push(item);
+        seenDates.add(date);
+      }
+    }
+
+    // 4. Save search history if userId is provided
     if (userId) {
       try {
         await User.findByIdAndUpdate(userId, {
@@ -52,15 +69,27 @@ export const getWeatherByCoords = async (req, res) => {
       }
     }
 
+    // 5. Return data
     res.json({
       current: currentWeather.data,
-      forecast: forecast.data.daily.slice(0, 7)
+      forecast: dailyForecast.slice(0, 5) // Return next 5 days
     });
+
   } catch (error) {
-    console.error('Error fetching weather data:', error);
-    res.status(500).json({ message: 'Error fetching weather data' });
+    console.error('Error fetching weather data:', error.response?.data || error.message);
+
+    if (error.response?.data?.cod === '429') {
+      return res.status(429).json({ message: 'Too many requests to weather service' });
+    }
+
+    if (error.response?.data?.cod === '401') {
+      return res.status(401).json({ message: 'Invalid API key' });
+    }
+
+    res.status(500).json({ message: 'Error connecting to weather service. Please try again later.' });
   }
 };
+
 
 export const getWeatherByCity = async (req, res) => {
   try {
@@ -113,8 +142,26 @@ export const getWeatherByCity = async (req, res) => {
       forecast: forecast.data.daily.slice(0, 7)
     });
   } catch (error) {
-    console.error('Error fetching weather data:', error);
-    res.status(500).json({ message: 'Error fetching weather data' });
+    console.error('Error fetching weather data:', error.response?.data || error.message);
+    
+    if (error.response?.data?.cod === '429') {
+      return res.status(429).json({ message: 'Too many requests to weather service' });
+    }
+    
+    if (error.response?.data?.cod === '401') {
+      return res.status(401).json({ message: 'Invalid API key' });
+    }
+
+    if (error.response?.data?.message) {
+      return res.status(error.response.status || 500).json({ 
+        message: `Weather API error: ${error.response.data.message}` 
+      });
+    }
+
+    // For network errors or other issues
+    res.status(500).json({ 
+      message: 'Error connecting to weather service. Please try again later.' 
+    });
   }
 };
 

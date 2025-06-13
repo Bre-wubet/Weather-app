@@ -40,14 +40,18 @@ const Home = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      toast.error('Please enter a city name');
+      return;
+    }
 
     try {
       await searchCity(searchQuery);
       toast.success(`Weather data loaded for ${searchQuery}`);
       setSearchQuery('');
     } catch (error) {
-      toast.error('Error fetching weather data');
+      console.error('Search error:', error);
+      toast.error(error.response?.data?.message || 'Error fetching weather data. Please try again.');
     }
   };
 
@@ -174,9 +178,9 @@ const Home = () => {
                         )}
                       </div>
                     )}
-                    <p className="font-bold dark:text-white">{Math.round(day.temp.max)}°C</p>
+                    <p className="font-bold dark:text-white">{Math.round(day.main.temp_max)}°C</p>
                     <p className="text-gray-500 dark:text-gray-400">
-                      {Math.round(day.temp.min)}°C
+                      {Math.round(day.main.temp_min)}°C
                     </p>
                   </div>
                 ))}
